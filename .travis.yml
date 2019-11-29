@@ -17,6 +17,7 @@ addons:
 before_script:
   # build docker images
   - sudo docker-compose -f local.yml build
+  - sudo docker-compose -f production.yml build
 
 install:
   # install docker-compose
@@ -24,3 +25,4 @@ install:
 
 script:
   - sudo docker-compose -f local.yml run django pytest
+  - sudo docker-compose -f production.yml run django pytest
