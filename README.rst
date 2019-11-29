@@ -9,7 +9,12 @@ Meetup Data Scraper
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
      :target: https://github.com/ambv/black
      :alt: Black code style
-
+.. image:: https://travis-ci.com/linuxluigi/meetup-data-scraper.svg?branch=master
+     :target: https://travis-ci.com/linuxluigi/meetup-data-scraper
+     :alt: Travis CI tests
+.. image:: https://readthedocs.org/projects/meetup-data-scraper/badge/?version=latest
+     :target: https://meetup-data-scraper.readthedocs.io/en/latest/?badge=latest
+     :alt: Documentation Status
 
 Settings
 --------
