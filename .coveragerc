@@ -1,0 +1,5 @@
+[run]
+include = meetup_data_scraper/*
+omit = *migrations*, *tests*
+plugins =
+    django_coverage_plugin

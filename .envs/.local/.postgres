@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=meetup_data_scraper
+POSTGRES_USER=CEoPtPAQZVAknuniEJSjPZEFSKCTBePu
+POSTGRES_PASSWORD=q92y64GKcyWKOE9pITWXdrPMxSYLXqseSiIG2OakNWaLf2aVQzRrcvy1OQ2uax5P
