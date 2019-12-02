@@ -4,6 +4,7 @@ volumes:
   production_postgres_data: {}
   production_postgres_data_backups: {}
   production_traefik: {}
+  production_elasticsearch_data: {}
 
 services:
   django:
@@ -14,9 +15,11 @@ services:
     depends_on:
       - postgres
       - redis
+      - elasticsearch
     env_file:
       - ./.envs/.production/.django
       - ./.envs/.production/.postgres
+      - ./.envs/.production/.elasticsearch
     command: /start
 
   postgres:
@@ -46,4 +49,9 @@ services:
   redis:
     image: redis:5.0
 
-  
+  elasticsearch:
+    image: elasticsearch:7.4.2
+    volumes:
+      - production_elasticsearch_data:/usr/share/elasticsearch/data
+    env_file:
+      - ./.envs/.production/.elasticsearch

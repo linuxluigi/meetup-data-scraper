@@ -250,3 +250,18 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 WAGTAIL_SITE_NAME = "Speisekarte"
 WAGTAILAPI_LIMIT_MAX = 50
+
+# https://docs.wagtail.io/en/v2.7/topics/search/backends.html#elasticsearch-backend
+WAGTAILSEARCH_BACKENDS = {
+    'default': {
+        'BACKEND': 'wagtail.search.backends.elasticsearch7',
+        'INDEX': 'wagtail',
+        'TIMEOUT': 5,
+        'HOSTS': [{
+            'host': env("http.host"),
+            'port': env("http.port"),
+        }],
+        'OPTIONS': {},
+        'INDEX_SETTINGS': {},
+    }
+}
