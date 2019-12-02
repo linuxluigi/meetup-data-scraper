@@ -15,6 +15,10 @@ Meetup Data Scraper
 .. image:: https://readthedocs.org/projects/meetup-data-scraper/badge/?version=latest
      :target: https://meetup-data-scraper.readthedocs.io/en/latest/?badge=latest
      :alt: Documentation Status
+.. image:: https://coveralls.io/repos/github/linuxluigi/meetup-data-scraper/badge.svg?branch=master
+     :target: https://coveralls.io/github/linuxluigi/meetup-data-scraper?branch=master
+     :alt: Coverage
+
 
 Settings
 --------
