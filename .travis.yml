@@ -18,6 +18,7 @@ before_script:
   # build docker images development
   - sudo docker-compose -f local.yml build
   # build docker images production
+  - cp -r .envs/.local/ .envs/.production/
   - sudo docker-compose -f production.yml build
 
 install:
