@@ -114,7 +114,19 @@ class MeetupApiClient:
 
         return -> GroupPage based on the group_urlname
         """
-        response: dict = self.get("{}".format(group_urlname))
+        try:
+            response: dict = self.get("{}".format(group_urlname))
+        except (HttpNotFoundError, HttpNotAccessibleError) as e:
+
+            # delete group if exists
+            try:
+                group: GroupPage = GroupPage.objects.get(urlname=group_urlname)
+                group.delete()
+            except GroupPage.DoesNotExist:
+                pass
+
+            print(e)
+            return
 
         try:
             group: GroupPage = GroupPage.objects.get(urlname=group_urlname)
@@ -213,21 +225,26 @@ class MeetupApiClient:
         events: [EventPage] = []
 
         # when there is a last event -> set on meetup that only events fetch wich are no ealier than this event
-        if last_event:
-            response: dict = self.get(
-                "{}/events?status=past&no_earlier_than={}&page={}&offset={}".format(
-                    group.urlname,
-                    last_event.time.strftime("%Y-%m-%d"),
-                    max_entries,
-                    offset,
+
+        try:
+            if last_event:
+                response: dict = self.get(
+                    "{}/events?status=past&no_earlier_than={}&page={}&offset={}".format(
+                        group.urlname,
+                        last_event.time.strftime("%Y-%m-%d"),
+                        max_entries,
+                        offset,
+                    )
                 )
-            )
-        else:
-            response: dict = self.get(
-                "{}/events?status=past&page={}&offset={}".format(
-                    group.urlname, max_entries, offset
+            else:
+                response: dict = self.get(
+                    "{}/events?status=past&page={}&offset={}".format(
+                        group.urlname, max_entries, offset
+                    )
                 )
-            )
+        except (HttpNotFoundError, HttpNotAccessibleError) as e:
+            print(e)
+            return events
 
         # go through every event from response and at them to the database
         for event_response in response:

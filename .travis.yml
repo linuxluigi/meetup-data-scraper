@@ -20,6 +20,8 @@ before_script:
   # build docker images production
   - cp -r .envs/.local/ .envs/.production/
   - sudo docker-compose -f production.yml build
+  # add test groups for group import command
+  - cp compose/local/django/meetup_groups/test-groups.json meetup_groups/test-groups.json
 
 install:
   # install docker-compose
@@ -31,4 +33,5 @@ script:
   # test commands
   - sudo docker-compose -f local.yml run django python manage.py migrate
   - sudo docker-compose -f local.yml run django python manage.py update_group --sandbox
+  - sudo docker-compose -f local.yml run django python manage.py get_groups --json_path /app/compose/local/django/meetup_groups
   - sudo docker-compose -f local.yml run django python manage.py update_index

@@ -11,7 +11,7 @@ from meetup_data_scraper.meetup_scraper.models import HomePage, GroupPage, Event
 import time
 import requests
 import requests_mock
-from .factories import GroupPageFactory, sandbox_meetup_group
+from .factories import GroupPageFactory, NotExistGroupPageFactory, meetup_groups
 
 
 def test_wait_for_next_request():
@@ -72,18 +72,31 @@ def test_get():
     with pytest.raises(HttpNotFoundError):
         api_client.get("blume/blume/blume")
 
-    json: dict = api_client.get(sandbox_meetup_group["urlname"])
+    json: dict = api_client.get(meetup_groups["sandbox"]["urlname"])
     assert isinstance(json, dict)
-    assert json["id"] == sandbox_meetup_group["meetup_id"]
+    assert json["id"] == meetup_groups["sandbox"]["meetup_id"]
 
 
 @pytest.mark.django_db()
 def test_get_group():
     api_client: MeetupApiClient = MeetupApiClient()
-    group: GroupPage = api_client.get_group(sandbox_meetup_group["urlname"])
+    sandbox_group: GroupPage = api_client.get_group(meetup_groups["sandbox"]["urlname"])
 
-    assert isinstance(group, GroupPage)
-    assert group.meetup_id == sandbox_meetup_group["meetup_id"]
+    assert isinstance(sandbox_group, GroupPage)
+    assert sandbox_group.meetup_id == meetup_groups["sandbox"]["meetup_id"]
+
+    # test without existing group in database
+    none_group: GroupPage = api_client.get_group(meetup_groups["not-exist"]["urlname"])
+    assert none_group is None
+
+    # test with existing group in database
+    NotExistGroupPageFactory()
+    none_group: GroupPage = api_client.get_group(meetup_groups["not-exist"]["urlname"])
+    assert none_group is None
+    not_exist_groups = GroupPage.objects.filter(
+        urlname=meetup_groups["not-exist"]["urlname"]
+    )
+    assert not_exist_groups.exists() is False
 
 
 @pytest.mark.django_db()
@@ -95,12 +108,19 @@ def test_update_all_group_events():
     assert isinstance(events[0], EventPage)
     assert len(events) > 1
 
+    not_exist_group: GroupPage = NotExistGroupPageFactory()
+    none_group_events: [EventPage] = api_client.update_all_group_events(
+        group=not_exist_group
+    )
+
+    assert len(none_group_events) == 0
+
 
 @pytest.mark.django_db()
 def test_update_group_events():
     api_client: MeetupApiClient = MeetupApiClient()
     sandbox_group: GroupPage = api_client.get_group(
-        group_urlname=sandbox_meetup_group["urlname"]
+        group_urlname=meetup_groups["sandbox"]["urlname"]
     )
     event_1: [EventPage] = api_client.update_group_events(
         group=sandbox_group, max_entries=1, offset=0
@@ -119,3 +139,10 @@ def test_update_group_events():
     assert event_1[0] != event_2[0]
     assert len(event_3) == 1
     assert event_1[0] != event_3[0]
+
+    not_exist_group: GroupPage = NotExistGroupPageFactory()
+    none_group_events: [EventPage] = api_client.update_group_events(
+        group=not_exist_group
+    )
+
+    assert len(none_group_events) == 0

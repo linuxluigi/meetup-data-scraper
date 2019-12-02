@@ -8,23 +8,37 @@ import glob
 class Command(BaseCommand):
     help = "load all groups from json files stored in /meetup_groups/*.json"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--json_path", type=str, help="Path of the meetup groups jsons",
+        )
+
     def handle(self, *args, **options):
         api_client: MeetupApiClient = MeetupApiClient()
 
+        if not options["json_path"]:
+            options["json_path"] = "/app/meetup_groups"
+
         # json generated on https://api.meetup.com/find/groups?&sign=true&photo-host=public&country=DE&page=200&offset=0&only=urlname
-        mettup_groups_files: [] = glob.glob("/app/meetup_groups/*.json")
+        mettup_groups_files: [] = glob.glob("{}/*.json".format(options["json_path"]))
 
         group_counter: int = 0
+        group_not_exists_counter: int = 0
         event_counter: int = 0
 
         for mettup_groups_file in mettup_groups_files:
             with open(mettup_groups_file) as json_file:
                 data = json.load(json_file)
 
-                group_counter = group_counter + len(data)
-
                 for group_data in data:
                     group: GroupPage = api_client.get_group(data[group_data]["urlname"])
+
+                    #  break if group not exists
+                    if not group:
+                        group_not_exists_counter = group_not_exists_counter + 1
+                        break
+                    group_counter = group_counter + 1
+
                     group_events: [EventPage] = api_client.update_all_group_events(
                         group=group
                     )
@@ -38,7 +52,7 @@ class Command(BaseCommand):
                     )
 
         print(
-            "{} groups was updatet with {} new events".format(
-                group_counter, event_counter
+            "{} groups was updatet with {} new events & {} do not exists anymore".format(
+                group_counter, event_counter, group_not_exists_counter
             )
         )

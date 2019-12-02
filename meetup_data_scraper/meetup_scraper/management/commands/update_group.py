@@ -28,12 +28,14 @@ class Command(BaseCommand):
             raise CommandError(
                 "No group_urlname was given, add a group by --group_urlname GroupUrl or use the sandbox group by --sandbox"
             )
-        try:
-            group: GroupPage = api_client.get_group(options["group_urlname"])
-        except HttpNotFoundError:
+
+        group: GroupPage = api_client.get_group(options["group_urlname"])
+
+        if not group:
             raise CommandError(
                 "Group with urlname {} does not exists".format(options["group_urlname"])
             )
+
         group_events: [EventPage] = api_client.update_all_group_events(group=group)
 
         print("{} has been {} events added!".format(group.name, len(group_events)))

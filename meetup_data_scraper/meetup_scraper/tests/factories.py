@@ -6,7 +6,10 @@ import pytz
 
 timezone.activate(pytz.timezone("UTC"))
 
-sandbox_meetup_group: dict = {"meetup_id": 1556336, "urlname": "Meetup-API-Testing"}
+meetup_groups: dict = {
+    "sandbox": {"meetup_id": 1556336, "urlname": "Meetup-API-Testing"},
+    "not-exist": {"meetup_id": 123456, "urlname": "None"},
+}
 
 
 class GroupPageFactory(DjangoModelFactory):
@@ -17,10 +20,10 @@ class GroupPageFactory(DjangoModelFactory):
         ]
 
     # custom models
-    meetup_id = sandbox_meetup_group["meetup_id"]
+    meetup_id = meetup_groups["sandbox"]["meetup_id"]
     name = "Meetup API Testing Sandbox"
     status = "active"
-    urlname = sandbox_meetup_group["urlname"]
+    urlname = meetup_groups["sandbox"]["urlname"]
     description = " "
     created = timezone.make_aware(datetime.strptime("2009-11-13", "%Y-%m-%d"))
     city = "Brooklyn"
@@ -34,6 +37,17 @@ class GroupPageFactory(DjangoModelFactory):
     slug = meetup_id
     path = "000100010001"
     depth = 3
+
+
+class NotExistGroupPageFactory(GroupPageFactory):
+    # custom models
+    meetup_id = meetup_groups["not-exist"]["meetup_id"]
+
+    # wagtail models
+    title = meetup_id
+    slug = meetup_id
+    urlname = meetup_groups["not-exist"]["urlname"]
+    path = "000100010002"
 
 
 class EventPage1Factory(DjangoModelFactory):
