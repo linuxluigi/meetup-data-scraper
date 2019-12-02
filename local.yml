@@ -3,6 +3,7 @@ version: '3'
 volumes:
   local_postgres_data: {}
   local_postgres_data_backups: {}
+  local_elasticsearch_data: {}
 
 services:
   django:
@@ -12,11 +13,13 @@ services:
     image: meetup_data_scraper_local_django
     depends_on:
       - postgres
+      - elasticsearch
     volumes:
       - .:/app
     env_file:
       - ./.envs/.local/.django
       - ./.envs/.local/.postgres
+      - ./.envs/.local/.elasticsearch
     ports:
       - "8000:8000"
     command: /start
@@ -31,3 +34,10 @@ services:
       - local_postgres_data_backups:/backups
     env_file:
       - ./.envs/.local/.postgres
+
+  elasticsearch:
+    image: elasticsearch:7.4.2
+    volumes:
+      - local_elasticsearch_data:/usr/share/elasticsearch/data
+    env_file:
+      - ./.envs/.local/.elasticsearch

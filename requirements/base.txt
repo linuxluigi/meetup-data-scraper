@@ -19,3 +19,6 @@ coreapi==2.3.3  # https://github.com/core-api/python-client
 
 # Wagtail
 wagtail==2.7  # https://github.com/wagtail/wagtail/
+
+# Elasticsearch 7
+elasticsearch==7.1.0  # https://github.com/elastic/elasticsearch-py

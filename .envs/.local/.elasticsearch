@@ -1,0 +1,7 @@
+# Elasticsearch
+# ------------------------------------------------------------------------------
+http.host=elasticsearch
+http.port=9200
+node.name=elasticsearch1
+cluster.name=meetup-data-scryper-cluster
+cluster.initial_master_nodes=elasticsearch1
