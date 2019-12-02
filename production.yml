@@ -52,6 +52,6 @@ services:
   elasticsearch:
     image: elasticsearch:7.4.2
     volumes:
-      - local_elasticsearch_data:/usr/share/elasticsearch/data
+      - production_elasticsearch_data:/usr/share/elasticsearch/data
     env_file:
       - ./.envs/.production/.elasticsearch
