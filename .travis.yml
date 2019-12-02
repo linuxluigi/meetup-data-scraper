@@ -27,3 +27,7 @@ install:
 script:
   # run tests
   - sudo docker-compose -f local.yml run django pytest
+  # test commands
+  - sudo docker-compose -f local.yml run django python manage.py migrate
+  - sudo docker-compose -f local.yml run django python manage.py update_group --sandbox
+  - sudo docker-compose -f local.yml run django python manage.py update_index
