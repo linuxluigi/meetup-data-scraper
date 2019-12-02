@@ -18,6 +18,8 @@ before_script:
   # build docker images development
   - sudo docker-compose -f local.yml build
   # build docker images production
+  - cp ./.envs/.local/.django ./.envs/.production/.django
+  - cp ./.envs/.local/.postgres ./.envs/.production/.postgres
   - sudo docker-compose -f production.yml build
 
 install:
