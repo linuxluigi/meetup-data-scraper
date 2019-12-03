@@ -11,6 +11,9 @@ Table of Contents:
 .. toctree::
    :maxdepth: 2
 
+   getting_started
+   usage-guide
+   advanced_topics
    troubleshooting
    faq
 

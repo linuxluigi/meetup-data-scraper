@@ -19,7 +19,6 @@ class Command(BaseCommand):
         if not options["json_path"]:
             options["json_path"] = "/app/meetup_groups"
 
-        # json generated on https://api.meetup.com/find/groups?&sign=true&photo-host=public&country=DE&page=200&offset=0&only=urlname
         mettup_groups_files: [] = glob.glob("{}/*.json".format(options["json_path"]))
 
         group_counter: int = 0
