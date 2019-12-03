@@ -310,5 +310,7 @@ class MeetupApiClient:
                 group.add_child(instance=event)
                 event.save_revision().publish()
                 events.append(event)
+            except KeyError:
+                pass
 
         return events
