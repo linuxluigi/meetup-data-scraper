@@ -9,6 +9,7 @@ timezone.activate(pytz.timezone("UTC"))
 meetup_groups: dict = {
     "sandbox": {"meetup_id": 1556336, "urlname": "Meetup-API-Testing"},
     "not-exist": {"meetup_id": 123456, "urlname": "None"},
+    "gone": {"meetup_id": 654321, "urlname": "connectedawareness-berlin"},
 }
 
 

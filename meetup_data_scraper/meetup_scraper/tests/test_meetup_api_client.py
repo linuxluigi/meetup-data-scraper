@@ -68,9 +68,11 @@ def test_get_home_page():
 def test_get():
     api_client: MeetupApiClient = MeetupApiClient()
 
-    # todo add more exepctions
     with pytest.raises(HttpNotFoundError):
-        api_client.get("blume/blume/blume")
+        api_client.get(meetup_groups["not-exist"]["urlname"])
+
+    with pytest.raises(HttpNotAccessibleError):
+        api_client.get(meetup_groups["gone"]["urlname"])
 
     json: dict = api_client.get(meetup_groups["sandbox"]["urlname"])
     assert isinstance(json, dict)
@@ -84,6 +86,10 @@ def test_get_group():
 
     assert isinstance(sandbox_group, GroupPage)
     assert sandbox_group.meetup_id == meetup_groups["sandbox"]["meetup_id"]
+
+    # test with gone group
+    none_group: GroupPage = api_client.get_group(meetup_groups["gone"]["urlname"])
+    assert none_group is None
 
     # test without existing group in database
     none_group: GroupPage = api_client.get_group(meetup_groups["not-exist"]["urlname"])
