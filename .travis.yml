@@ -46,4 +46,5 @@ after_success:
   - echo TRAVIS_JOB_ID=$TRAVIS_JOB_ID >> .envs/.local/.django
   - echo TRAVIS_BRANCH=$TRAVIS_BRANCH >> .envs/.local/.django
   - echo COVERALLS_REPO_TOKEN=$COVERALLS_REPO_TOKEN >> .envs/.local/.django
-  - docker-compose -f local.yml run django coveralls
+  - sudo docker-compose -f local.yml run django coverage report
+  - sudo docker-compose -f local.yml run django coveralls
