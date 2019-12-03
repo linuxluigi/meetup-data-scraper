@@ -4,14 +4,17 @@ from meetup_data_scraper.meetup_scraper.meetup_api_client import (
     MeetupApiClient,
 )
 from meetup_data_scraper.meetup_scraper.exceptions import (
+    HttpNoSuccess,
     HttpNotFoundError,
     HttpNotAccessibleError,
+    HttpNoXRateLimitHeader,
 )
 from meetup_data_scraper.meetup_scraper.models import HomePage, GroupPage, EventPage
 import time
 import requests
 import requests_mock
 from .factories import GroupPageFactory, NotExistGroupPageFactory, meetup_groups
+from pytest_httpserver import HTTPServer
 
 
 def test_wait_for_next_request():
@@ -39,6 +42,11 @@ def test_update_rate_limit():
     adapter.register_uri("GET", "mock://test.com", text="data")
     response = session.get("mock://test.com")
 
+    # use fake response without RateLimit headers
+    rate_limit: RateLimit = RateLimit()
+    with pytest.raises(HttpNoXRateLimitHeader):
+        rate_limit.update_rate_limit(response=response)
+
     # set fake response
     default_header_value = 30
     response.headers["X-RateLimit-Limit"] = str(default_header_value)
@@ -65,7 +73,7 @@ def test_get_home_page():
     assert home_page.title == "Home"
 
 
-def test_get():
+def test_get(httpserver: HTTPServer):
     api_client: MeetupApiClient = MeetupApiClient()
 
     with pytest.raises(HttpNotFoundError):
@@ -78,9 +86,21 @@ def test_get():
     assert isinstance(json, dict)
     assert json["id"] == meetup_groups["sandbox"]["meetup_id"]
 
+    # test for HttpNoXRateLimitHeader execption
+    httpserver.expect_oneshot_request("/HttpNoXRateLimitHeader").respond_with_data("OK")
+    api_client.base_url = httpserver.url_for("/HttpNoXRateLimitHeader")
+    with pytest.raises(HttpNoXRateLimitHeader):
+        api_client.get("")
+
+    # test for HttpNoSuccess execption
+    httpserver.expect_oneshot_request("/HttpNoSuccess")
+    api_client.base_url = httpserver.url_for("/HttpNoSuccess")
+    with pytest.raises(HttpNoSuccess):
+        api_client.get("")
+
 
 @pytest.mark.django_db()
-def test_get_group():
+def test_get_group(httpserver: HTTPServer):
     api_client: MeetupApiClient = MeetupApiClient()
     sandbox_group: GroupPage = api_client.get_group(meetup_groups["sandbox"]["urlname"])
 
@@ -104,6 +124,26 @@ def test_get_group():
     )
     assert not_exist_groups.exists() is False
 
+    sandbox_group: GroupPage = GroupPageFactory()
+
+    # test for HttpNoXRateLimitHeader execption
+    httpserver.expect_oneshot_request(
+        "/{}".format(sandbox_group.urlname)
+    ).respond_with_data("OK")
+    api_client.base_url = httpserver.url_for("/")
+    none_group = api_client.get_group(sandbox_group.urlname)
+    assert none_group is None
+    sandbox_group_datbase = GroupPage.objects.filter(urlname=sandbox_group.urlname)
+    assert sandbox_group_datbase.exists() is True
+
+    # test for HttpNoSuccess execption
+    httpserver.expect_oneshot_request("/HttpNoSuccess").respond_with_data("OK")
+    api_client.base_url = httpserver.url_for("/HttpNoSuccess")
+    none_group = api_client.get_group(sandbox_group.urlname)
+    assert none_group is None
+    sandbox_group_datbase = GroupPage.objects.filter(urlname=sandbox_group.urlname)
+    assert sandbox_group_datbase.exists() is True
+
 
 @pytest.mark.django_db()
 def test_update_all_group_events():
@@ -123,7 +163,7 @@ def test_update_all_group_events():
 
 
 @pytest.mark.django_db()
-def test_update_group_events():
+def test_update_group_events(httpserver: HTTPServer):
     api_client: MeetupApiClient = MeetupApiClient()
     sandbox_group: GroupPage = api_client.get_group(
         group_urlname=meetup_groups["sandbox"]["urlname"]
@@ -152,3 +192,26 @@ def test_update_group_events():
     )
 
     assert len(none_group_events) == 0
+
+    # delete all events from sandbox group
+    sandbox_group_events: [EventPage] = sandbox_group.events()
+    for event in sandbox_group_events:
+        event.delete()
+
+    # test for HttpNoXRateLimitHeader execption
+    httpserver.expect_oneshot_request(
+        "{}/events?status=past&page=1&offset=0".format(sandbox_group.urlname)
+    ).respond_with_data("OK")
+    api_client.base_url = httpserver.url_for("/")
+    event_4: [EventPage] = api_client.update_group_events(
+        group=sandbox_group, max_entries=1, offset=0
+    )
+    assert len(event_4) == 0
+
+    # test for HttpNoSuccess execption
+    httpserver.expect_oneshot_request("/HttpNoSuccess").respond_with_data("OK")
+    api_client.base_url = httpserver.url_for("/HttpNoSuccess")
+    event_5: [EventPage] = api_client.update_group_events(
+        group=sandbox_group, max_entries=1, offset=0
+    )
+    assert len(event_5) == 0

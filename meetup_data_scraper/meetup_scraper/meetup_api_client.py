@@ -1,5 +1,10 @@
 import requests
-from .exceptions import HttpNotFoundError, HttpNotAccessibleError
+from .exceptions import (
+    HttpNoSuccess,
+    HttpNotFoundError,
+    HttpNotAccessibleError,
+    HttpNoXRateLimitHeader,
+)
 import time
 from .models import HomePage, GroupPage, EventPage
 from requests.models import Response
@@ -51,10 +56,17 @@ class RateLimit:
         Keyword arguments:
         response -- http response
         """
-        self.limit = int(response.headers.get("X-RateLimit-Limit"))
-        self.remaining = int(response.headers.get("X-RateLimit-Remaining"))
-        self.reset = int(response.headers.get("X-RateLimit-Reset"))
-        self.reset_time = time.time() + self.reset
+        try:
+            self.limit = int(response.headers.get("X-RateLimit-Limit"))
+            self.remaining = int(response.headers.get("X-RateLimit-Remaining"))
+            self.reset = int(response.headers.get("X-RateLimit-Reset"))
+            self.reset_time = time.time() + self.reset
+        except TypeError:
+            self.limit = 0
+            self.remaining = 0
+            self.reset = 60
+            self.reset_time = time.time() + self.reset
+            raise HttpNoXRateLimitHeader("A very specific bad thing happened.")
 
 
 class MeetupApiClient:
@@ -82,12 +94,14 @@ class MeetupApiClient:
             self.homePage = HomePage.objects.all()[:1].get()
         return self.homePage
 
-    def get(self, url_path: str) -> dict:
+    def get(self, url_path: str, retry: int = 0, max_retry=3) -> dict:
         """
         meetup http request on the url_path
 
         Keyword arguments:
         url_path -- url path without domain example for url https://api.meetup.com/find/groups is the url_path find/groups
+        retry -- how many times try to get the same url
+        max_retry -- max retries bevor raise an error
 
         return -> json as python dict
         """
@@ -100,8 +114,19 @@ class MeetupApiClient:
             raise HttpNotFoundError
         if response.status_code == 410:
             raise HttpNotAccessibleError
+        if response.status_code != 200:
+            if retry <= max_retry:
+                raise HttpNoSuccess
+            else:
+                return self.get(url_path=url_path, retry=retry + 1)
 
-        self.rate_limit.update_rate_limit(response=response)
+        try:
+            self.rate_limit.update_rate_limit(response=response)
+        except HttpNoXRateLimitHeader:
+            if retry <= max_retry:
+                raise HttpNoXRateLimitHeader
+            else:
+                return self.get(url_path=url_path, retry=retry + 1)
 
         return response.json()
 
@@ -125,6 +150,10 @@ class MeetupApiClient:
             except GroupPage.DoesNotExist:
                 pass
 
+            print(e)
+            return
+
+        except (HttpNoSuccess, HttpNoXRateLimitHeader) as e:
             print(e)
             return
 
@@ -242,7 +271,12 @@ class MeetupApiClient:
                         group.urlname, max_entries, offset
                     )
                 )
-        except (HttpNotFoundError, HttpNotAccessibleError) as e:
+        except (
+            HttpNotFoundError,
+            HttpNotAccessibleError,
+            HttpNoSuccess,
+            HttpNoXRateLimitHeader,
+        ) as e:
             print(e)
             return events
 
