@@ -1,5 +1,10 @@
 dist: bionic
 
+language: python
+
+os:
+  - linux
+
 services:
   - docker
 
