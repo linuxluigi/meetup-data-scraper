@@ -26,7 +26,8 @@ before_script:
 install:
   # install docker-compose
   - pip3 install docker-compose wheel
-  # install coveralls
+  # install python local dependencies for coverage
+  - sudo apt-get install -y gcc python3-psycopg2 python-psycopg2 musl-dev libpq-dev
   - pip3 install -r requirements/local.txt
 
 script:
