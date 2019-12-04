@@ -94,9 +94,9 @@ def test_get(httpserver: HTTPServer):
 
     # test for HttpNoSuccess execption
     httpserver.expect_oneshot_request("/HttpNoSuccess")
-    api_client.base_url = httpserver.url_for("/HttpNoSuccess")
+    api_client.base_url = httpserver.url_for("")
     with pytest.raises(HttpNoSuccess):
-        api_client.get("")
+        api_client.get("/")
 
 
 @pytest.mark.django_db()
