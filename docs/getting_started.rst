@@ -36,6 +36,12 @@ Create a new superuser account.
 
     $ docker-compose -f local.yml run django python manage.py createsuperuser
 
+Add Elasticsearch index.
+
+.. code-block:: console
+
+    $ docker-compose -f local.yml run django python manage.py update_index
+
 Load the Meetup Sandbox Group with all events.
 
 .. code-block:: console
@@ -146,6 +152,12 @@ Create the sql tables or update the tables.
 .. code-block:: console
 
     $ docker-compose -f production.yml run django python manage.py migrate
+
+Add Elasticsearch index.
+
+.. code-block:: console
+
+    $ docker-compose -f production.yml run django python manage.py update_index
 
 Create a new superuser account.
 
