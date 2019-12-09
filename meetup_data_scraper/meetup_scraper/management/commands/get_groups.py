@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
-from meetup_data_scraper.meetup_scraper.meetup_api_client import MeetupApiClient
+from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import (
+    MeetupApiClient,
+)
 from meetup_data_scraper.meetup_scraper.models import GroupPage, EventPage
 import json
 import glob
