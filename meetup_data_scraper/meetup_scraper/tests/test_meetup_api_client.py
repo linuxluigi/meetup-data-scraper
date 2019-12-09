@@ -1,9 +1,9 @@
 import pytest
-from meetup_data_scraper.meetup_scraper.meetup_api_client import (
+from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import (
     RateLimit,
     MeetupApiClient,
 )
-from meetup_data_scraper.meetup_scraper.exceptions import (
+from meetup_data_scraper.meetup_scraper.meetup_api_client.exceptions import (
     HttpNoSuccess,
     HttpNotFoundError,
     HttpNotAccessibleError,
@@ -45,7 +45,7 @@ def test_update_rate_limit():
     # use fake response without RateLimit headers
     rate_limit: RateLimit = RateLimit()
     with pytest.raises(HttpNoXRateLimitHeader):
-        rate_limit.update_rate_limit(response=response)
+        rate_limit.update_rate_limit(response=response, reset_time=2)
 
     # set fake response
     default_header_value = 30
@@ -54,7 +54,7 @@ def test_update_rate_limit():
     response.headers["X-RateLimit-Reset"] = str(default_header_value)
 
     rate_limit: RateLimit = RateLimit()
-    rate_limit.update_rate_limit(response=response)
+    rate_limit.update_rate_limit(response=response, reset_time=2)
 
     # assert
     assert rate_limit.limit == default_header_value
@@ -87,16 +87,20 @@ def test_get(httpserver: HTTPServer):
     assert json["id"] == meetup_groups["sandbox"]["meetup_id"]
 
     # test for HttpNoXRateLimitHeader execption
-    httpserver.expect_oneshot_request("/HttpNoXRateLimitHeader").respond_with_data("OK")
+    for _ in range(4):
+        httpserver.expect_oneshot_request("/HttpNoXRateLimitHeader").respond_with_data(
+            "OK"
+        )
     api_client.base_url = httpserver.url_for("/HttpNoXRateLimitHeader")
     with pytest.raises(HttpNoXRateLimitHeader):
-        api_client.get("")
+        api_client.get(url_path="", reset_time=2)
 
     # test for HttpNoSuccess execption
-    httpserver.expect_oneshot_request("/HttpNoSuccess")
+    for _ in range(4):
+        httpserver.expect_oneshot_request("/HttpNoSuccess")
     api_client.base_url = httpserver.url_for("")
     with pytest.raises(HttpNoSuccess):
-        api_client.get("/")
+        api_client.get(url_path="/", reset_time=2)
 
 
 @pytest.mark.django_db()
@@ -147,19 +151,43 @@ def test_get_group(httpserver: HTTPServer):
 
 @pytest.mark.django_db()
 def test_update_all_group_events():
+    # set api_client & sandbox group
     api_client: MeetupApiClient = MeetupApiClient()
-    sandbox_group = GroupPageFactory()
-    events: [EventPage] = api_client.update_all_group_events(sandbox_group)
+    sandbox_group: GroupPage = GroupPageFactory()
 
+    # delte all events from group
+    for event in sandbox_group.events():
+        event.delete()
+
+    # update sandbox group
+    events: [EventPage] = api_client.update_all_group_events(group=sandbox_group)
     assert isinstance(events[0], EventPage)
     assert len(events) > 1
 
+    # update non exist group
     not_exist_group: GroupPage = NotExistGroupPageFactory()
     none_group_events: [EventPage] = api_client.update_all_group_events(
         group=not_exist_group
     )
-
     assert len(none_group_events) == 0
+
+    # delte last event
+    sandbox_group.last_event().delete()
+
+    # update sandbox group with max_entries_per_page of 300
+    events: [EventPage] = api_client.update_all_group_events(
+        group=sandbox_group, max_entries_per_page=300
+    )
+    assert isinstance(events[0], EventPage)
+
+    # delte last event
+    sandbox_group.last_event().delete()
+
+    # update sandbox group with max_entries_per_page of -10
+    events: [EventPage] = api_client.update_all_group_events(
+        group=sandbox_group, max_entries_per_page=-10
+    )
+    assert isinstance(events[0], EventPage)
 
 
 @pytest.mark.django_db()
@@ -175,7 +203,7 @@ def test_update_group_events(httpserver: HTTPServer):
         group=sandbox_group, max_entries=3, offset=1
     )
     event_3: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=2, offset=0
+        group=sandbox_group, max_entries=2, offset=-10
     )
 
     assert isinstance(event_1[0], EventPage)

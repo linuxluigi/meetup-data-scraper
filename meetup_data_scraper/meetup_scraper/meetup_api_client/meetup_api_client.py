@@ -1,19 +1,21 @@
 import requests
-from .exceptions import (
+
+import time
+from requests.models import Response
+from django.utils import timezone
+import pytz
+from meetup_data_scraper.meetup_scraper.models import (
+    EventPage,
+    GroupPage,
+    HomePage,
+)
+from meetup_data_scraper.meetup_scraper.meetup_api_client.exceptions import (
     HttpNoSuccess,
     HttpNotFoundError,
     HttpNotAccessibleError,
     HttpNoXRateLimitHeader,
 )
-import time
-from .models import HomePage, GroupPage, EventPage
-from requests.models import Response
-from django.utils import timezone
-import pytz
-from datetime import datetime
-
-
-timezone.activate(pytz.timezone("UTC"))
+from .json_parser import get_group_from_response, get_event_from_response
 
 
 class RateLimit:
@@ -49,12 +51,13 @@ class RateLimit:
             while self.reset_time > time.time():
                 time.sleep(1)
 
-    def update_rate_limit(self, response: Response):
+    def update_rate_limit(self, response: Response, reset_time: int):
         """
         Update rate limit information from response header
 
         Keyword arguments:
         response -- http response
+        reset_time -- wait time in secounds
         """
         try:
             self.limit = int(response.headers.get("X-RateLimit-Limit"))
@@ -64,7 +67,7 @@ class RateLimit:
         except TypeError:
             self.limit = 0
             self.remaining = 0
-            self.reset = 60
+            self.reset = reset_time
             self.reset_time = time.time() + self.reset
             raise HttpNoXRateLimitHeader("A very specific bad thing happened.")
 
@@ -84,6 +87,9 @@ class MeetupApiClient:
         # default homepage, page will created automatically on migrate
         self.home_page: HomePage = None
 
+        # set timezone
+        timezone.activate(pytz.timezone("UTC"))
+
     def get_home_page(self) -> HomePage:
         """
         get the default homepage wich will created on migration
@@ -94,7 +100,9 @@ class MeetupApiClient:
             self.homePage = HomePage.objects.all()[:1].get()
         return self.homePage
 
-    def get(self, url_path: str, retry: int = 0, max_retry=3) -> dict:
+    def get(
+        self, url_path: str, retry: int = 0, max_retry=3, reset_time: int = 60
+    ) -> dict:
         """
         meetup http request on the url_path
 
@@ -102,6 +110,7 @@ class MeetupApiClient:
         url_path -- url path without domain example for url https://api.meetup.com/find/groups is the url_path find/groups
         retry -- how many times try to get the same url
         max_retry -- max retries bevor raise an error
+        reset_time -- wait time in secounds (default: 60)
 
         return -> json as python dict
         """
@@ -115,15 +124,15 @@ class MeetupApiClient:
         if response.status_code == 410:
             raise HttpNotAccessibleError
         if response.status_code != 200:
-            if retry <= max_retry:
+            if retry >= max_retry:
                 raise HttpNoSuccess
             else:
                 return self.get(url_path=url_path, retry=retry + 1)
 
         try:
-            self.rate_limit.update_rate_limit(response=response)
+            self.rate_limit.update_rate_limit(response=response, reset_time=reset_time)
         except HttpNoXRateLimitHeader:
-            if retry <= max_retry:
+            if retry >= max_retry:
                 raise HttpNoXRateLimitHeader
             else:
                 return self.get(url_path=url_path, retry=retry + 1)
@@ -157,40 +166,9 @@ class MeetupApiClient:
             print(e)
             return
 
-        try:
-            group: GroupPage = GroupPage.objects.get(urlname=group_urlname)
-            group.status = response["status"]
-            group.description = response["description"]
-            group.city = response["city"]
-            group.country = response["country"]
-            group.lat = response["lat"]
-            group.lon = response["lon"]
-            group.members = response["members"]
-            group.member_pay_fee = response["member_pay_fee"]
-            group.save()
-
-        except GroupPage.DoesNotExist:
-            group: GroupPage = GroupPage(
-                meetup_id=response["id"],
-                title="{}: {}".format(response["id"], response["name"]),
-                name=response["name"],
-                urlname=group_urlname,
-                slug=response["id"],
-                status=response["status"],
-                description=response["description"],
-                created=timezone.make_aware(
-                    datetime.fromtimestamp(response["created"] / 1000)
-                ),
-                city=response["city"],
-                country=response["country"],
-                lat=response["lat"],
-                lon=response["lon"],
-                members=response["members"],
-            )
-            self.get_home_page().add_child(instance=group)
-            group.save_revision().publish()
-
-        return group
+        return get_group_from_response(
+            response=response, home_page=self.get_home_page()
+        )
 
     def update_all_group_events(
         self, group: GroupPage, max_entries_per_page: int = 200
@@ -282,35 +260,10 @@ class MeetupApiClient:
 
         # go through every event from response and at them to the database
         for event_response in response:
-            try:
-                EventPage.objects.get(meetup_id=event_response["id"])
-            except EventPage.DoesNotExist:
-
-                try:
-                    description = event_response["description"]
-                except KeyError:
-                    description = ""
-
-                try:
-                    status = event_response["status"]
-                except KeyError:
-                    status = ""
-
-                event: EventPage = EventPage(
-                    meetup_id=str(event_response["id"]),
-                    title="{}: {}".format(event_response["id"], event_response["name"]),
-                    name=event_response["name"],
-                    slug=event_response["id"],
-                    status=status,
-                    time=timezone.make_aware(
-                        datetime.fromtimestamp(event_response["time"] / 1000)
-                    ),
-                    description=description,
-                )
-                group.add_child(instance=event)
-                event.save_revision().publish()
+            event: EventPage = get_event_from_response(
+                response=event_response, group=group
+            )
+            if event:
                 events.append(event)
-            except KeyError:
-                pass
 
         return events

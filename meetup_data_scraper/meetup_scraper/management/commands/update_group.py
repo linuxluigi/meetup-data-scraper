@@ -1,7 +1,8 @@
 from django.core.management.base import BaseCommand, CommandError
-from meetup_data_scraper.meetup_scraper.meetup_api_client import MeetupApiClient
+from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import (
+    MeetupApiClient,
+)
 from meetup_data_scraper.meetup_scraper.models import GroupPage, EventPage
-from meetup_data_scraper.meetup_scraper.exceptions import HttpNotFoundError
 
 
 class Command(BaseCommand):

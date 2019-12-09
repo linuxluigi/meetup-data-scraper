@@ -19,6 +19,9 @@ Dowload group & events from Meetup-API into a database to make a fulltext search
      :target: https://coveralls.io/github/linuxluigi/meetup-data-scraper?branch=master
      :alt: Coverage
 
+.. image:: docs/_static/meetup-data-scraper.png
+     :target: docs/_static/meetup-data-scraper.png
+     :alt: meetup-data-scraper
 
 Settings
 --------
