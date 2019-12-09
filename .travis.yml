@@ -37,9 +37,9 @@ script:
   - sudo docker-compose -f local.yml run django coverage run -m pytest
   # test commands
   - sudo docker-compose -f local.yml run django python manage.py migrate
+  - sudo docker-compose -f local.yml run django python manage.py update_index
   - sudo docker-compose -f local.yml run django python manage.py update_group --sandbox
   - sudo docker-compose -f local.yml run django python manage.py get_groups --json_path /app/compose/local/django/meetup_groups
-  - sudo docker-compose -f local.yml run django python manage.py update_index
 
 # code coverage
 after_success:
