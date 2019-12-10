@@ -6,7 +6,7 @@ set -o nounset
 
 
 
-
+# postgres
 if [ -z "${POSTGRES_USER}" ]; then
     base_postgres_image_default_user='postgres'
     export POSTGRES_USER="${base_postgres_image_default_user}"
@@ -38,5 +38,34 @@ until postgres_ready; do
   sleep 1
 done
 >&2 echo 'PostgreSQL is available'
+
+# elasticsearch
+elasticsearch_ready() {
+python << END
+import os
+from requests.models import Response
+import requests
+import sys
+
+elasticsearch_url: str = "http://{}:{}".format(os.environ["http.host"], os.environ["http.port"])
+elasticsearch_health_url: str = "{}/_cluster/health?wait_for_status=yellow&timeout=50s".format(elasticsearch_url)
+
+try:
+    response: Response = requests.get(elasticsearch_health_url)
+except (ConnectionRefusedError, requests.exceptions.ConnectionError):
+    sys.exit(-1)
+
+if response.status_code == 200:
+    sys.exit(0)
+sys.exit(-1)
+
+END
+}
+until elasticsearch_ready; do
+  >&2 echo 'Waiting for Elasticsearch to become available...'
+  sleep 1
+done
+>&2 echo 'Elasticsearch is available'
+
 
 exec "$@"

@@ -36,7 +36,10 @@ services:
       - ./.envs/.local/.postgres
 
   elasticsearch:
-    image: elasticsearch:7.5.0
+    build:
+      context: .
+      dockerfile: ./compose/production/elasticsearch/Dockerfile
+    image: meetup_data_scraper_production_elasticsearch
     volumes:
       - local_elasticsearch_data:/usr/share/elasticsearch/data
     env_file:
