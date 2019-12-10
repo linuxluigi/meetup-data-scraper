@@ -50,10 +50,9 @@ services:
     image: redis:5.0
 
   elasticsearch:
-    image: elasticsearch:7.4.2
+    image: elasticsearch:7.5.0
     volumes:
       - production_elasticsearch_data:/usr/share/elasticsearch/data
     env_file:
       - ./.envs/.production/.elasticsearch
-    restart_policy:
-      condition: on-failure
+    restart: always

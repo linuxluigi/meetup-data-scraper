@@ -36,10 +36,9 @@ services:
       - ./.envs/.local/.postgres
 
   elasticsearch:
-    image: elasticsearch:7.4.2
+    image: elasticsearch:7.5.0
     volumes:
       - local_elasticsearch_data:/usr/share/elasticsearch/data
     env_file:
       - ./.envs/.local/.elasticsearch
-    restart_policy:
-      condition: on-failure
+    restart: always
