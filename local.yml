@@ -41,3 +41,5 @@ services:
       - local_elasticsearch_data:/usr/share/elasticsearch/data
     env_file:
       - ./.envs/.local/.elasticsearch
+    restart_policy:
+      condition: on-failure
