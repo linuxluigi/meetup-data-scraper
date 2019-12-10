@@ -248,8 +248,8 @@ LOGGING = {
 
 # Wagtail
 # ------------------------------------------------------------------------------
-WAGTAIL_SITE_NAME = "Speisekarte"
-WAGTAILAPI_LIMIT_MAX = 50
+WAGTAIL_SITE_NAME = "Meetup Data Scraper"
+WAGTAILAPI_LIMIT_MAX = 100
 
 # https://docs.wagtail.io/en/v2.7/topics/search/backends.html#elasticsearch-backend
 WAGTAILSEARCH_BACKENDS = {
