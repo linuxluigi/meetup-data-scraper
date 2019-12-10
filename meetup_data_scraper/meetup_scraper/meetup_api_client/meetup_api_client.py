@@ -23,8 +23,6 @@ class RateLimit:
     meetup api rate limit, wait for new request if needed
     """
 
-    #
-
     def __init__(self):
         super().__init__()
 
