@@ -82,6 +82,7 @@ WAGTAIL_APPS = [
 THIRD_PARTY_APPS = [
     "crispy_forms",
     "rest_framework",
+    "corsheaders",
 ]
 
 LOCAL_APPS = [
@@ -123,6 +124,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -250,6 +252,7 @@ LOGGING = {
 # ------------------------------------------------------------------------------
 WAGTAIL_SITE_NAME = "MeetupDataScraper"
 WAGTAILAPI_LIMIT_MAX = 100
+WAGTAILAPI_BASE_URL = env("WAGTAILAPI_BASE_URL")
 
 # https://docs.wagtail.io/en/v2.7/topics/search/backends.html#elasticsearch-backend
 WAGTAILSEARCH_BACKENDS = {
