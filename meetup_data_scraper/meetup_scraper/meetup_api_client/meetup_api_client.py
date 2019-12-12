@@ -67,7 +67,7 @@ class RateLimit:
             self.remaining = 0
             self.reset = reset_time
             self.reset_time = time.time() + self.reset
-            raise HttpNoXRateLimitHeader("A very specific bad thing happened.")
+            raise HttpNoXRateLimitHeader("There is no XRateLimit Header!")
 
 
 class MeetupApiClient:
@@ -131,7 +131,7 @@ class MeetupApiClient:
             self.rate_limit.update_rate_limit(response=response, reset_time=reset_time)
         except HttpNoXRateLimitHeader:
             if retry >= max_retry:
-                raise HttpNoXRateLimitHeader
+                raise HttpNoXRateLimitHeader("There is no XRateLimit Header!")
             else:
                 return self.get(url_path=url_path, retry=retry + 1)
 

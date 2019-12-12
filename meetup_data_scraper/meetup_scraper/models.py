@@ -1,11 +1,25 @@
 from django.db import models
 
 from wagtail.core.models import Page
+from wagtail.core.fields import RichTextField
 from wagtail.admin.edit_handlers import FieldPanel, InlinePanel
 from wagtail.search import index
 from wagtail.api import APIField
 from modelcluster.fields import ParentalKey
 from wagtail.snippets.models import register_snippet
+from django.forms.models import model_to_dict
+
+
+class SimplePage(Page):
+
+    body = RichTextField()
+
+    content_panels = Page.content_panels + [
+        FieldPanel("body"),
+    ]
+
+    parent_page_types = ["meetup_scraper.HomePage"]  # allow parent page types
+    subpage_types = []  # allow child page types
 
 
 class HomePage(Page):
@@ -13,7 +27,28 @@ class HomePage(Page):
     Default Home Page
     """
 
-    subpage_types = ["meetup_scraper.GroupPage"]  # allowd child page types
+    @property
+    def child_pages(self):
+        simple_pages: [SimplePage] = SimplePage.objects.live().child_of(self)
+
+        if not simple_pages.exists():
+            return []
+
+        pages: [dict] = []
+        for page in SimplePage.objects.live().child_of(self):
+            pages.append(model_to_dict(page))
+
+        return pages
+
+    # api fields
+    api_fields = [
+        APIField("child_pages"),
+    ]
+
+    subpage_types = [
+        "meetup_scraper.GroupPage",
+        "meetup_scraper.SimplePage",
+    ]  # allow child page types
 
 
 @register_snippet
@@ -30,7 +65,7 @@ class Photo(models.Model):
     base_url = models.URLField(blank=True, null=True)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("highres_link"),
         FieldPanel("photo_link"),
@@ -68,7 +103,7 @@ class Member(models.Model):
     photo = models.ForeignKey(Photo, on_delete=models.SET_NULL, blank=True, null=True)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("name"),
         FieldPanel("bio"),
@@ -112,7 +147,7 @@ class Venue(models.Model):
     zip_code = models.CharField(max_length=255, blank=True, null=True)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("name"),
         FieldPanel("address_1"),
@@ -267,8 +302,8 @@ class EventPage(Page):
         APIField("visibility"),
     ]
 
-    parent_page_types = ["meetup_scraper.GroupPage"]  # allowd parent page types
-    subpage_types = []  # no child pages allowed
+    parent_page_types = ["meetup_scraper.GroupPage"]  # allow parent page types
+    subpage_types = []  # no child pages allow
 
 
 @register_snippet
@@ -333,7 +368,7 @@ class Category(models.Model):
     sort_name = models.CharField(max_length=255, blank=True, null=True)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("name"),
         FieldPanel("shortname"),
@@ -371,7 +406,7 @@ class MetaCategory(models.Model):
     sort_name = models.CharField(max_length=255)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("categories"),
         FieldPanel("name"),
@@ -413,7 +448,7 @@ class Topic(models.Model):
     urlkey = models.CharField(max_length=255, unique=True)
 
     # admin interface panels
-    panels = Page.content_panels + [
+    panels = [
         FieldPanel("meetup_id"),
         FieldPanel("lang"),
         FieldPanel("name"),
@@ -591,7 +626,6 @@ class GroupPage(Page):
         APIField("lat"),
         APIField("lon"),
         APIField("link"),
-        APIField("list_mode"),
         APIField("localized_country_name"),
         APIField("localized_location"),
         APIField("member_limit"),
@@ -612,8 +646,8 @@ class GroupPage(Page):
         APIField("who"),
     ]
 
-    parent_page_types = ["meetup_scraper.HomePage"]  # allowd parent page types
-    subpage_types = ["meetup_scraper.EventPage"]  # allowd child page types
+    parent_page_types = ["meetup_scraper.HomePage"]  # allow parent page types
+    subpage_types = ["meetup_scraper.EventPage"]  # allow child page types
 
     def events(self) -> [EventPage]:
         """
