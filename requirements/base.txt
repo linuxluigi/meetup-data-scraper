@@ -16,6 +16,7 @@ django-redis==4.10.0  # https://github.com/niwinz/django-redis
 # Django REST Framework
 djangorestframework==3.10.3  # https://github.com/encode/django-rest-framework
 coreapi==2.3.3  # https://github.com/core-api/python-client
+django-cors-headers==3.2.0  # https://github.com/adamchainz/django-cors-headers
 
 # Wagtail
 wagtail==2.7  # https://github.com/wagtail/wagtail/
