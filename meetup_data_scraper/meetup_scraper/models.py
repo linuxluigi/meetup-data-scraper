@@ -35,7 +35,7 @@ class HomePage(Page):
             return []
 
         pages: [dict] = []
-        for page in SimplePage.objects.live().child_of(self):
+        for page in simple_pages:
             pages.append(model_to_dict(page))
 
         return pages

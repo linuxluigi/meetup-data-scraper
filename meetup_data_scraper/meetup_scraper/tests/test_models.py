@@ -5,10 +5,17 @@ from .factories import (
     EventPage2Factory,
     EventPage3Factory,
     ImprintPageFactory,
-    PrivacyPageFactory
+    PrivacyPageFactory,
 )
-from meetup_data_scraper.meetup_scraper.models import GroupPage, EventPage, SimplePage, HomePage
-from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import MeetupApiClient
+from meetup_data_scraper.meetup_scraper.models import (
+    GroupPage,
+    EventPage,
+    SimplePage,
+    HomePage,
+)
+from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import (
+    MeetupApiClient,
+)
 import datetime
 
 pytestmark = pytest.mark.django_db

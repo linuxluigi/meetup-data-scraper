@@ -121,7 +121,8 @@ class ImprintPageFactory(DjangoModelFactory):
     path = "000100010003"
     depth = 3
 
-class PrivacyPageFactory(DjangoModelFactory):
+
+class PrivacyPageFactory(ImprintPageFactory):
     # wagtail models
     title = "Privacy"
     slug = title
