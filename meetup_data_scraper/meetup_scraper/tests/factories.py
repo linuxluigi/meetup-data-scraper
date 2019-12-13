@@ -47,20 +47,20 @@ class EventPage1Factory(DjangoModelFactory):
     # wagtail models
     title = "{}: {}".format(meetup_id, name)
     slug = meetup_id
-    path = "0001000100010001"
+    path = "0001000100019001"
     depth = 4
 
 
 class EventPage2Factory(EventPage1Factory):
     meetup_id = "15467880"
     time = timezone.make_aware(datetime.strptime("2015-01-15", "%Y-%m-%d"))
-    path = "0001000100010002"
+    path = "0001000100019002"
 
 
 class EventPage3Factory(EventPage1Factory):
     meetup_id = "13041272"
     time = timezone.make_aware(datetime.strptime("2011-01-15", "%Y-%m-%d"))
-    path = "0001000100010003"
+    path = "0001000100019003"
 
 
 class GroupPageFactory(DjangoModelFactory):
