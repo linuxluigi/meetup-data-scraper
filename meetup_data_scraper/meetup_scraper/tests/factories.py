@@ -103,3 +103,26 @@ class NotExistGroupPageFactory(GroupPageFactory):
     slug = meetup_id
     urlname = meetup_groups["not-exist"]["urlname"]
     path = "000100010002"
+
+
+class ImprintPageFactory(DjangoModelFactory):
+    class Meta:
+        model = "meetup_scraper.SimplePage"
+        django_get_or_create = [
+            "title",
+        ]
+
+    # custom models
+    body = "<p>HTML content</p>"
+
+    # wagtail models
+    title = "Imprint"
+    slug = title
+    path = "000100010003"
+    depth = 3
+
+class PrivacyPageFactory(DjangoModelFactory):
+    # wagtail models
+    title = "Privacy"
+    slug = title
+    path = "000100010004"

@@ -4,8 +4,10 @@ from .factories import (
     EventPage1Factory,
     EventPage2Factory,
     EventPage3Factory,
+    ImprintPageFactory,
+    PrivacyPageFactory
 )
-from meetup_data_scraper.meetup_scraper.models import GroupPage, EventPage
+from meetup_data_scraper.meetup_scraper.models import GroupPage, EventPage, SimplePage, HomePage
 from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import MeetupApiClient
 import datetime
 
@@ -60,3 +62,21 @@ def test_group_page_events():
     EventPage2Factory()
     EventPage3Factory()
     assert len(sandbox_group.events()) == 3
+
+
+@pytest.mark.django_db()
+def test_home_page_child_pages():
+    # get home page
+    api_client: MeetupApiClient = MeetupApiClient()
+    home_page: HomePage = api_client.get_home_page()
+
+    # test when there no child page
+    assert len(home_page.child_pages) == 0
+
+    # test with 1 child page
+    ImprintPageFactory()
+    assert len(home_page.child_pages) == 1
+
+    # test with 1 child page
+    PrivacyPageFactory()
+    assert len(home_page.child_pages) == 2
