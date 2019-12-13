@@ -202,7 +202,8 @@ class MeetupApiClient:
         return events
 
     def update_group_events(
-        self, group: GroupPage, max_entries: int = 200) -> [EventPage]:
+        self, group: GroupPage, max_entries: int = 200
+    ) -> [EventPage]:
         """
         get new past events from meetup rest api & add it as child pages to the group
 
@@ -232,9 +233,7 @@ class MeetupApiClient:
                 )
             else:
                 response: dict = self.get(
-                    "{}/events?status=past&page={}".format(
-                        group.urlname, max_entries
-                    )
+                    "{}/events?status=past&page={}".format(group.urlname, max_entries)
                 )
         except (
             HttpNotFoundError,
