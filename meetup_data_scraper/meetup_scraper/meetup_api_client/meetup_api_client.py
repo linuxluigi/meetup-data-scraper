@@ -176,19 +176,16 @@ class MeetupApiClient:
 
         Keyword arguments:
         group -- GroupPage
-        max_entries_per_page -- how much events get from the meetup rest api per request (default 200, min 1, max 200)
+        max_entries_per_page -- how much events get from the meetup rest api per request (default 200, min 10, max 200)
 
         return -> [EventPage] every new Events wich wasn't in the database
         """
 
-        # set max_entries_per_page between 1 to 200
-        if max_entries_per_page < 1:
-            max_entries_per_page = 1
+        # set max_entries_per_page between 10 to 200
+        if max_entries_per_page < 10:
+            max_entries_per_page = 10
         if max_entries_per_page > 200:
             max_entries_per_page = 200
-
-        # meetup rest api page offset
-        offset_counter: int = 0
 
         # return [EventPage], init empty
         events: [EventPage] = []
@@ -196,32 +193,25 @@ class MeetupApiClient:
         # fetch all events
         while True:
             group_events: [EventPage] = self.update_group_events(
-                group=group, max_entries=max_entries_per_page, offset=offset_counter
+                group=group, max_entries=max_entries_per_page
             )
             events.extend(group_events)
-            if len(group_events) < 200:
+            if len(group_events) == 0:
                 break
-            offset_counter = offset_counter + 1
 
         return events
 
     def update_group_events(
-        self, group: GroupPage, max_entries: int = 200, offset: int = 0
-    ) -> [EventPage]:
+        self, group: GroupPage, max_entries: int = 200) -> [EventPage]:
         """
         get new past events from meetup rest api & add it as child pages to the group
 
         Keyword arguments:
         group -- GroupPage
         max_entries_per_page -- how much events get from the meetup rest api per request (default 200, min 1, max 200)
-        offset -- meetup page offset (default 0, min 0)
 
         return -> [EventPage] new Events wich wasn't in the database from the request
         """
-
-        # set offset to min value
-        if offset < 0:
-            offset = 0
 
         # get last event from group
         last_event: EventPage = group.last_event()
@@ -234,17 +224,16 @@ class MeetupApiClient:
         try:
             if last_event:
                 response: dict = self.get(
-                    "{}/events?status=past&no_earlier_than={}&page={}&offset={}".format(
+                    "{}/events?status=past&no_earlier_than={}&page={}".format(
                         group.urlname,
                         last_event.time.strftime("%Y-%m-%d"),
                         max_entries,
-                        offset,
                     )
                 )
             else:
                 response: dict = self.get(
-                    "{}/events?status=past&page={}&offset={}".format(
-                        group.urlname, max_entries, offset
+                    "{}/events?status=past&page={}".format(
+                        group.urlname, max_entries
                     )
                 )
         except (

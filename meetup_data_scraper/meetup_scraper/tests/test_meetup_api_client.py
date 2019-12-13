@@ -164,6 +164,10 @@ def test_update_all_group_events():
     assert isinstance(events[0], EventPage)
     assert len(events) > 1
 
+    # check if all events was added to the database
+    events: [EventPage] = api_client.update_all_group_events(group=sandbox_group)
+    assert len(events) == 0
+
     # update non exist group
     not_exist_group: GroupPage = NotExistGroupPageFactory()
     none_group_events: [EventPage] = api_client.update_all_group_events(
@@ -197,13 +201,13 @@ def test_update_group_events(httpserver: HTTPServer):
         group_urlname=meetup_groups["sandbox"]["urlname"]
     )
     event_1: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=1, offset=0
+        group=sandbox_group, max_entries=1
     )
     event_2: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=3, offset=1
+        group=sandbox_group, max_entries=3
     )
     event_3: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=2, offset=-10
+        group=sandbox_group, max_entries=2
     )
 
     assert isinstance(event_1[0], EventPage)
@@ -228,11 +232,11 @@ def test_update_group_events(httpserver: HTTPServer):
 
     # test for HttpNoXRateLimitHeader execption
     httpserver.expect_oneshot_request(
-        "{}/events?status=past&page=1&offset=0".format(sandbox_group.urlname)
+        "{}/events?status=past&page=1".format(sandbox_group.urlname)
     ).respond_with_data("OK")
     api_client.base_url = httpserver.url_for("/")
     event_4: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=1, offset=0
+        group=sandbox_group, max_entries=1
     )
     assert len(event_4) == 0
 
@@ -240,6 +244,6 @@ def test_update_group_events(httpserver: HTTPServer):
     httpserver.expect_oneshot_request("/HttpNoSuccess").respond_with_data("OK")
     api_client.base_url = httpserver.url_for("/HttpNoSuccess")
     event_5: [EventPage] = api_client.update_group_events(
-        group=sandbox_group, max_entries=1, offset=0
+        group=sandbox_group, max_entries=1
     )
     assert len(event_5) == 0
