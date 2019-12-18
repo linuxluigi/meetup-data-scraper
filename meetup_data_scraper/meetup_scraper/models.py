@@ -52,7 +52,7 @@ class HomePage(Page):
 
 
 @register_snippet
-class Photo(models.Model):
+class Photo(index.Indexed, models.Model):
     """
     Meetup Photo
     """
@@ -75,7 +75,8 @@ class Photo(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
+        
         index.SearchField("meetup_id"),
         index.SearchField("highres_link"),
         index.SearchField("photo_link"),
@@ -96,7 +97,7 @@ class Photo(models.Model):
 
 
 @register_snippet
-class Member(models.Model):
+class Member(index.Indexed, models.Model):
     meetup_id = models.BigIntegerField(unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -111,7 +112,7 @@ class Member(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("name"),
         index.SearchField("bio"),
@@ -128,7 +129,7 @@ class Member(models.Model):
 
 
 @register_snippet
-class Venue(models.Model):
+class Venue(index.Indexed, models.Model):
     """
     Meetup Venue
     """
@@ -163,7 +164,7 @@ class Venue(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("address_1"),
         index.SearchField("address_2"),
@@ -225,6 +226,25 @@ class EventPage(Page):
     )
     venue_visibility = models.CharField(max_length=255, blank=True, null=True)
     visibility = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def location(self):
+        """
+        return the venue location if exists, else the group location
+        """
+
+        if self.venue:
+            return {
+                "lat": self.venue.lat,
+                "lon": self.venue.lon,
+            }
+
+        parent: Page = self.get_parent()
+        group: GroupPage = GroupPage.objects.get(pk=parent.pk)
+        return {
+            "lat": group.lat,
+            "lon": group.lon,
+        }
 
     # admin interface panels
     content_panels = Page.content_panels + [
@@ -300,6 +320,7 @@ class EventPage(Page):
         APIField("venue"),
         APIField("venue_visibility"),
         APIField("visibility"),
+        APIField("location"),
     ]
 
     parent_page_types = ["meetup_scraper.GroupPage"]  # allow parent page types
@@ -307,7 +328,7 @@ class EventPage(Page):
 
 
 @register_snippet
-class EventHost(models.Model):
+class EventHost(index.Indexed, models.Model):
     """
     Meetup Event Host
     """
@@ -336,7 +357,7 @@ class EventHost(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("host_count"),
         index.SearchField("member"),
         index.SearchField("intro"),
@@ -357,7 +378,7 @@ class EventHost(models.Model):
 
 
 @register_snippet
-class Category(models.Model):
+class Category(index.Indexed, models.Model):
     """
     Meetup Category
     """
@@ -376,7 +397,7 @@ class Category(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("name"),
         index.SearchField("shortname"),
@@ -393,7 +414,7 @@ class Category(models.Model):
 
 
 @register_snippet
-class MetaCategory(models.Model):
+class MetaCategory(index.Indexed, models.Model):
     """
     Meetup Meta Category
     """
@@ -416,7 +437,7 @@ class MetaCategory(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("categories"),
         index.SearchField("name"),
@@ -437,7 +458,7 @@ class MetaCategory(models.Model):
 
 
 @register_snippet
-class Topic(models.Model):
+class Topic(index.Indexed, models.Model):
     """
     Meetup Topic
     """
@@ -456,7 +477,7 @@ class Topic(models.Model):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("lang"),
         index.SearchField("name"),
