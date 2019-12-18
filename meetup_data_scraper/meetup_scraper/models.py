@@ -10,6 +10,160 @@ from wagtail.snippets.models import register_snippet
 from django.forms.models import model_to_dict
 
 
+@register_snippet
+class Venue(index.Indexed, models.Model):
+    """
+    Meetup Venue
+    """
+
+    meetup_id = models.IntegerField(unique=True)
+    address_1 = models.CharField(max_length=255, blank=True, null=True)
+    address_2 = models.CharField(max_length=255, blank=True, null=True)
+    address_3 = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=255, blank=True, null=True)
+    country = models.CharField(max_length=255, blank=True, null=True)
+    lat = models.DecimalField(max_digits=20, decimal_places=8, blank=True, null=True)
+    lon = models.DecimalField(max_digits=20, decimal_places=8, blank=True, null=True)
+    localized_country_name = models.CharField(max_length=255, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    phone = models.CharField(max_length=255, blank=True, null=True)
+    zip_code = models.CharField(max_length=255, blank=True, null=True)
+
+    # admin interface panels
+    panels = [
+        FieldPanel("meetup_id"),
+        FieldPanel("name"),
+        FieldPanel("address_1"),
+        FieldPanel("address_2"),
+        FieldPanel("address_3"),
+        FieldPanel("city"),
+        FieldPanel("zip_code"),
+        FieldPanel("country"),
+        FieldPanel("lat"),
+        FieldPanel("lon"),
+        FieldPanel("localized_country_name"),
+        FieldPanel("phone"),
+    ]
+
+    # Search index configuration
+    search_fields = [
+        index.SearchField("meetup_id"),
+        index.SearchField("address_1"),
+        index.SearchField("address_2"),
+        index.SearchField("address_3"),
+        index.SearchField("city"),
+        index.SearchField("country"),
+        index.SearchField("lat"),
+        index.SearchField("lon"),
+        index.SearchField("localized_country_name"),
+        index.SearchField("name"),
+        index.SearchField("phone"),
+        index.SearchField("zip_code"),
+    ]
+
+    # api fields
+    api_fields = [
+        APIField("meetup_id"),
+        APIField("address_1"),
+        APIField("address_2"),
+        APIField("address_3"),
+        APIField("city"),
+        APIField("country"),
+        APIField("location"),
+        APIField("localized_country_name"),
+        APIField("name"),
+        APIField("phone"),
+        APIField("zip_code"),
+        APIField("groups"),
+    ]
+
+    @property
+    def location(self):
+        """
+        return the group location
+        """
+
+        return {
+            "lat": self.lat,
+            "lon": self.lon,
+        }
+
+    @property
+    def groups(self):
+        """
+        return all groups which has this venue
+        """
+        groups: dict = {}
+        event_pages: EventPage = EventPage.objects.filter(venue=self)
+
+        if event_pages.exists():
+            for event in event_pages:
+                group: Page = event.get_parent()
+                if not group.pk in groups:
+                    groups[group.pk] = model_to_dict(group)
+                    groups[group.pk]["events"] = []
+                groups[group.pk]["events"].append(model_to_dict(event))
+
+        return groups
+
+
+class MeetupPage(Page):
+    created = models.DateTimeField(blank=True, null=True)
+    venue = models.ForeignKey(
+        Venue, on_delete=models.SET_NULL, blank=True, null=True, related_name="+"
+    )
+    venue_visibility = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    name = models.CharField(max_length=100)
+    lat = models.DecimalField(max_digits=20, decimal_places=8, blank=True, null=True)
+    lon = models.DecimalField(max_digits=20, decimal_places=8, blank=True, null=True)
+    link = models.URLField()
+    time = models.DateTimeField(blank=True, null=True)
+
+
+    content_panels = Page.content_panels + [
+        FieldPanel("name"),
+        FieldPanel("description"),
+        FieldPanel("created"),
+        FieldPanel("venue"),
+        FieldPanel("venue_visibility"),
+        FieldPanel("link"),
+        FieldPanel("time"),
+    ]
+
+    search_fields = Page.search_fields + [
+        index.SearchField("created"),
+        index.RelatedFields("venue", Venue.search_fields),
+        index.FilterField("venue_visibility"),
+        index.FilterField("description"),
+        index.FilterField("name"),
+        index.FilterField("link"),
+        index.FilterField("time"),
+    ]
+
+    api_fields = [
+        APIField("created"),
+        APIField("venue"),
+        APIField("venue_visibility"),
+        APIField("name"),
+        APIField("description"),
+        APIField("location"),
+        APIField("link"),
+        APIField("time"),
+    ]
+
+    @property
+    def location(self):
+        """
+        return the group location
+        """
+
+        return {
+            "lat": self.lat,
+            "lon": self.lon,
+        }
+
+
 class SimplePage(Page):
 
     body = RichTextField()
@@ -76,7 +230,6 @@ class Photo(index.Indexed, models.Model):
 
     # Search index configuration
     search_fields = [
-        
         index.SearchField("meetup_id"),
         index.SearchField("highres_link"),
         index.SearchField("photo_link"),
@@ -98,6 +251,10 @@ class Photo(index.Indexed, models.Model):
 
 @register_snippet
 class Member(index.Indexed, models.Model):
+    """
+    Meetup Member
+    """
+
     meetup_id = models.BigIntegerField(unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
@@ -112,11 +269,12 @@ class Member(index.Indexed, models.Model):
     ]
 
     # Search index configuration
+    # fixme index photo
     search_fields = [
         index.SearchField("meetup_id"),
         index.SearchField("name"),
         index.SearchField("bio"),
-        index.SearchField("photo"),
+        # index.RelatedFields("photo", Photo.search_fields),
     ]
 
     # api fields
@@ -128,75 +286,7 @@ class Member(index.Indexed, models.Model):
     ]
 
 
-@register_snippet
-class Venue(index.Indexed, models.Model):
-    """
-    Meetup Venue
-    """
-
-    meetup_id = models.IntegerField(unique=True)
-    address_1 = models.CharField(max_length=255, blank=True, null=True)
-    address_2 = models.CharField(max_length=255, blank=True, null=True)
-    address_3 = models.CharField(max_length=255, blank=True, null=True)
-    city = models.CharField(max_length=255, blank=True, null=True)
-    country = models.CharField(max_length=255, blank=True, null=True)
-    lat = models.DecimalField(max_digits=40, decimal_places=30, blank=True, null=True)
-    lon = models.DecimalField(max_digits=40, decimal_places=30, blank=True, null=True)
-    localized_country_name = models.CharField(max_length=255, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    phone = models.CharField(max_length=255, blank=True, null=True)
-    zip_code = models.CharField(max_length=255, blank=True, null=True)
-
-    # admin interface panels
-    panels = [
-        FieldPanel("meetup_id"),
-        FieldPanel("name"),
-        FieldPanel("address_1"),
-        FieldPanel("address_2"),
-        FieldPanel("address_3"),
-        FieldPanel("city"),
-        FieldPanel("zip_code"),
-        FieldPanel("country"),
-        FieldPanel("lat"),
-        FieldPanel("lon"),
-        FieldPanel("localized_country_name"),
-        FieldPanel("phone"),
-    ]
-
-    # Search index configuration
-    search_fields = [
-        index.SearchField("meetup_id"),
-        index.SearchField("address_1"),
-        index.SearchField("address_2"),
-        index.SearchField("address_3"),
-        index.SearchField("city"),
-        index.SearchField("country"),
-        index.SearchField("lat"),
-        index.SearchField("lon"),
-        index.SearchField("localized_country_name"),
-        index.SearchField("name"),
-        index.SearchField("phone"),
-        index.SearchField("zip_code"),
-    ]
-
-    # api fields
-    api_fields = [
-        APIField("meetup_id"),
-        APIField("address_1"),
-        APIField("address_2"),
-        APIField("address_3"),
-        APIField("city"),
-        APIField("country"),
-        APIField("lat"),
-        APIField("lon"),
-        APIField("localized_country_name"),
-        APIField("name"),
-        APIField("phone"),
-        APIField("zip_code"),
-    ]
-
-
-class EventPage(Page):
+class EventPage(MeetupPage):
     """
     Meetup Event
     """
@@ -206,9 +296,7 @@ class EventPage(Page):
     attendance_count = models.IntegerField(blank=True, null=True)
     attendance_sample = models.IntegerField(blank=True, null=True)
     attendee_sample = models.IntegerField(blank=True, null=True)
-    created = models.DateTimeField(blank=True, null=True)
     date_in_series_pattern = models.BooleanField(default=False)
-    description = models.TextField(blank=True, null=True)
     duration = models.DurationField(blank=True, null=True)
     fee_accepts = models.CharField(max_length=255, blank=True, null=True)
     fee_amount = models.FloatField(blank=True, null=True)
@@ -216,45 +304,18 @@ class EventPage(Page):
     fee_description = models.TextField(blank=True, null=True)
     fee_label = models.CharField(max_length=255, blank=True, null=True)
     how_to_find_us = models.TextField(blank=True, null=True)
-    name = models.CharField(max_length=100)
     status = models.CharField(max_length=100, blank=True, null=True)
-    time = models.DateTimeField()
     updated = models.DateTimeField(blank=True, null=True)
     utc_offset = models.IntegerField(blank=True, null=True)
-    venue = models.ForeignKey(
-        Venue, on_delete=models.SET_NULL, blank=True, null=True, related_name="+"
-    )
-    venue_visibility = models.CharField(max_length=255, blank=True, null=True)
     visibility = models.CharField(max_length=255, blank=True, null=True)
 
-    @property
-    def location(self):
-        """
-        return the venue location if exists, else the group location
-        """
-
-        if self.venue:
-            return {
-                "lat": self.venue.lat,
-                "lon": self.venue.lon,
-            }
-
-        parent: Page = self.get_parent()
-        group: GroupPage = GroupPage.objects.get(pk=parent.pk)
-        return {
-            "lat": group.lat,
-            "lon": group.lon,
-        }
-
     # admin interface panels
-    content_panels = Page.content_panels + [
+    content_panels = MeetupPage.content_panels + [
         FieldPanel("meetup_id"),
         FieldPanel("attendance_count"),
         FieldPanel("attendance_sample"),
         FieldPanel("attendee_sample"),
-        FieldPanel("created"),
         FieldPanel("date_in_series_pattern"),
-        FieldPanel("description"),
         FieldPanel("duration"),
         InlinePanel("event_hosts", label="Event Hosts"),
         FieldPanel("fee_accepts"),
@@ -263,22 +324,17 @@ class EventPage(Page):
         FieldPanel("fee_description"),
         FieldPanel("fee_label"),
         FieldPanel("how_to_find_us"),
-        FieldPanel("name"),
         FieldPanel("status"),
-        FieldPanel("time"),
         FieldPanel("updated"),
         FieldPanel("utc_offset"),
-        FieldPanel("venue"),
-        FieldPanel("venue_visibility"),
         FieldPanel("visibility"),
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = MeetupPage.search_fields + [
         index.SearchField("meetup_id"),
         index.SearchField("attendance_count"),
         index.SearchField("attendance_sample"),
-        index.SearchField("created"),
         index.FilterField("date_in_series_pattern"),
         index.FilterField("description"),
         index.FilterField("fee_accepts"),
@@ -287,17 +343,13 @@ class EventPage(Page):
         index.FilterField("fee_description"),
         index.FilterField("fee_label"),
         index.FilterField("how_to_find_us"),
-        index.FilterField("name"),
         index.FilterField("status"),
-        index.FilterField("time"),
         index.FilterField("updated"),
-        index.FilterField("venue"),
-        index.FilterField("venue_visibility"),
         index.FilterField("visibility"),
     ]
 
     # api fields
-    api_fields = [
+    api_fields = MeetupPage.api_fields + [
         APIField("meetup_id"),
         APIField("attendance_count"),
         APIField("attendance_sample"),
@@ -314,7 +366,6 @@ class EventPage(Page):
         APIField("how_to_find_us"),
         APIField("name"),
         APIField("status"),
-        APIField("time"),
         APIField("updated"),
         APIField("utc_offset"),
         APIField("venue"),
@@ -358,12 +409,13 @@ class EventHost(index.Indexed, models.Model):
 
     # Search index configuration
     search_fields = [
+        index.RelatedFields("event_page", EventPage.search_fields),
         index.SearchField("host_count"),
         index.SearchField("member"),
         index.SearchField("intro"),
         index.SearchField("join_date"),
         index.SearchField("name"),
-        index.SearchField("photo"),
+        index.RelatedFields("photo", Photo.search_fields),
     ]
 
     # api fields
@@ -437,11 +489,12 @@ class MetaCategory(index.Indexed, models.Model):
     ]
 
     # Search index configuration
+    # fixme index categories & photo
     search_fields = [
         index.SearchField("meetup_id"),
-        index.SearchField("categories"),
+        # index.RelatedFields('categories', Category.search_fields),
         index.SearchField("name"),
-        index.SearchField("photo"),
+        # index.RelatedFields('photo', Photo.search_fields),
         index.SearchField("shortname"),
         index.SearchField("sort_name"),
     ]
@@ -493,7 +546,7 @@ class Topic(index.Indexed, models.Model):
     ]
 
 
-class GroupPage(Page):
+class GroupPage(MeetupPage):
     """
     Meetup Group
     """
@@ -506,8 +559,6 @@ class GroupPage(Page):
     city = models.CharField(max_length=255, blank=True, null=True)
     city_link = models.URLField(blank=True, null=True)
     country = models.CharField(max_length=255, blank=True, null=True)
-    created = models.DateTimeField()
-    description = models.TextField()
     fee_options_currencies_code = models.CharField(
         max_length=255, blank=True, null=True
     )
@@ -528,9 +579,6 @@ class GroupPage(Page):
         null=True,
         related_name="key_photo",
     )
-    lat = models.DecimalField(max_digits=10, decimal_places=8)
-    lon = models.DecimalField(max_digits=10, decimal_places=8)
-    link = models.URLField()
     localized_country_name = models.CharField(max_length=255, blank=True, null=True)
     localized_location = models.CharField(max_length=255, blank=True, null=True)
     member_limit = models.IntegerField(blank=True, null=True)
@@ -538,7 +586,6 @@ class GroupPage(Page):
     meta_category = models.ForeignKey(
         MetaCategory, on_delete=models.SET_NULL, blank=True, null=True, related_name="+"
     )
-    name = models.CharField(max_length=100)
     nomination_acceptable = models.BooleanField(default=False)
     organizer = models.ForeignKey(
         Member, on_delete=models.SET_NULL, blank=True, null=True, related_name="+"
@@ -555,29 +602,23 @@ class GroupPage(Page):
     who = models.CharField(max_length=255, blank=True, null=True)
 
     # admin interface panels
-    content_panels = Page.content_panels + [
+    content_panels = MeetupPage.content_panels + [
         FieldPanel("meetup_id"),
         FieldPanel("category"),
         FieldPanel("city"),
         FieldPanel("city_link"),
         FieldPanel("country"),
-        FieldPanel("created"),
-        FieldPanel("description"),
         FieldPanel("fee_options_currencies_code"),
         FieldPanel("fee_options_currencies_default"),
         FieldPanel("fee_options_type"),
         FieldPanel("group_photo"),
         FieldPanel("join_mode"),
         FieldPanel("key_photo"),
-        FieldPanel("lat"),
-        FieldPanel("lon"),
-        FieldPanel("link"),
         FieldPanel("localized_country_name"),
         FieldPanel("localized_location"),
         FieldPanel("member_limit"),
         FieldPanel("members"),
         FieldPanel("meta_category"),
-        FieldPanel("name"),
         FieldPanel("nomination_acceptable"),
         FieldPanel("organizer"),
         FieldPanel("short_link"),
@@ -593,7 +634,7 @@ class GroupPage(Page):
     ]
 
     # Search index configuration
-    search_fields = Page.search_fields + [
+    search_fields = MeetupPage.search_fields + [
         index.SearchField("meetup_id"),
         index.SearchField("category"),
         index.SearchField("city"),
@@ -605,19 +646,16 @@ class GroupPage(Page):
         index.SearchField("fee_options_currencies_default"),
         index.SearchField("fee_options_type"),
         index.SearchField("group_photo"),
+        index.RelatedFields("group_photo", Photo.search_fields),
         index.SearchField("join_mode"),
-        index.SearchField("key_photo"),
-        index.SearchField("lat"),
-        index.SearchField("lon"),
-        index.SearchField("link"),
+        index.RelatedFields("key_photo", Photo.search_fields),
         index.SearchField("localized_country_name"),
         index.SearchField("localized_location"),
         index.SearchField("member_limit"),
         index.SearchField("members"),
-        index.SearchField("meta_category"),
-        index.SearchField("name"),
+        index.RelatedFields("meta_category", MetaCategory.search_fields),
         index.SearchField("nomination_acceptable"),
-        index.SearchField("organizer"),
+        index.RelatedFields("organizer", Member.search_fields),
         index.SearchField("short_link"),
         index.SearchField("state"),
         index.SearchField("status"),
@@ -630,13 +668,12 @@ class GroupPage(Page):
     ]
 
     # api fields
-    api_fields = [
+    api_fields = MeetupPage.api_fields + [
         APIField("meetup_id"),
         APIField("category"),
         APIField("city"),
         APIField("city_link"),
         APIField("country"),
-        APIField("created"),
         APIField("description"),
         APIField("fee_options_currencies_code"),
         APIField("fee_options_currencies_default"),
@@ -644,15 +681,11 @@ class GroupPage(Page):
         APIField("group_photo"),
         APIField("join_mode"),
         APIField("key_photo"),
-        APIField("lat"),
-        APIField("lon"),
-        APIField("link"),
         APIField("localized_country_name"),
         APIField("localized_location"),
         APIField("member_limit"),
         APIField("members"),
         APIField("meta_category"),
-        APIField("name"),
         APIField("nomination_acceptable"),
         APIField("organizer"),
         APIField("short_link"),
@@ -665,6 +698,7 @@ class GroupPage(Page):
         APIField("visibility"),
         APIField("welcome_message"),
         APIField("who"),
+        APIField("location"),
     ]
 
     parent_page_types = ["meetup_scraper.HomePage"]  # allow parent page types

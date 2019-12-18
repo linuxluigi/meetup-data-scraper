@@ -3,14 +3,13 @@ from wagtail.api.v2.router import WagtailAPIRouter
 from wagtail.images.api.v2.endpoints import ImagesAPIEndpoint
 from wagtail.documents.api.v2.endpoints import DocumentsAPIEndpoint
 from meetup_data_scraper.meetup_scraper.api.v2.endpoints import (
-    EventPageAPIEndpoint,
-    GroupPageAPIEndpoint,
     VenueAPIEndpoint,
     PhotoAPIEndpoint,
     MemberAPIEndpoint,
     EventHostAPIEndpoint,
     CategoryAPIEndpoint,
     MetaCategoryAPIEndpoint,
+    MeetupAPIEndpoint,
 )
 
 # Create the router. "wagtailapi" is the URL namespace
@@ -24,11 +23,10 @@ api_router.register_endpoint("pages", PagesAPIEndpoint)
 api_router.register_endpoint("images", ImagesAPIEndpoint)
 api_router.register_endpoint("documents", DocumentsAPIEndpoint)
 
-api_router.register_endpoint("events", EventPageAPIEndpoint)
-api_router.register_endpoint("groups", GroupPageAPIEndpoint)
 api_router.register_endpoint("venues", VenueAPIEndpoint)
 api_router.register_endpoint("photos", PhotoAPIEndpoint)
 api_router.register_endpoint("members", MemberAPIEndpoint)
 api_router.register_endpoint("hosts", EventHostAPIEndpoint)
 api_router.register_endpoint("categories", CategoryAPIEndpoint)
 api_router.register_endpoint("metacategories", MetaCategoryAPIEndpoint)
+api_router.register_endpoint("meetup", MeetupAPIEndpoint)

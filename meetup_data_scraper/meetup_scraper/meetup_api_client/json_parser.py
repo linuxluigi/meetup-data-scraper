@@ -12,6 +12,7 @@ from meetup_data_scraper.meetup_scraper.models import (
     Topic,
     Venue,
 )
+from decimal import Decimal
 
 
 def get_event_from_response(response: dict, group: GroupPage) -> EventPage:
@@ -39,6 +40,7 @@ def get_event_from_response(response: dict, group: GroupPage) -> EventPage:
             name=response["name"],
             slug=response["id"],
             time=timezone.make_aware(datetime.fromtimestamp(response["time"] / 1000)),
+            link=response["link"],
         )
     except KeyError:
         return
@@ -84,7 +86,13 @@ def get_event_from_response(response: dict, group: GroupPage) -> EventPage:
             datetime.fromtimestamp(response["updated"] / 1000)
         )
     if "venue" in response:
-        event.venue = get_venue_from_response(response=response["venue"])
+        venue: Venue = get_venue_from_response(response=response["venue"])
+        event.venue = venue
+        event.lat = venue.lat
+        event.lon = venue.lon
+    else:
+        event.lat = group.lat
+        event.lon = group.lon
     if "venue_visibility" in response:
         event.venue_visibility = response["venue_visibility"]
     if "visibility" in response:
@@ -119,8 +127,8 @@ def get_group_from_response(response: dict, home_page: HomePage) -> GroupPage:
                 datetime.fromtimestamp(response["created"] / 1000)
             ),
             description=response["description"],
-            lat=response["lat"],
-            lon=response["lon"],
+            lat=Decimal("{0:.8f}".format(response["lat"])),
+            lon=Decimal("{0:.8f}".format(response["lon"])),
             link=response["link"],
             members=response["members"],
             name=response["name"],
@@ -172,9 +180,9 @@ def get_group_from_response(response: dict, home_page: HomePage) -> GroupPage:
     if "key_photo" in response:
         group.key_photo = get_photo_from_response(response["key_photo"])
     if "lat" in response:
-        group.lat = response["lat"]
+        group.lat = Decimal("{0:.8f}".format(response["lat"]))
     if "lon" in response:
-        group.lon = response["lon"]
+        group.lon = Decimal("{0:.8f}".format(response["lon"]))
     if "localized_country_name" in response:
         group.localized_country_name = response["localized_country_name"]
     if "localized_location" in response:
@@ -415,9 +423,9 @@ def get_venue_from_response(response: dict):
     if "country" in response:
         venue.country = response["country"]
     if "lat" in response:
-        venue.lat = response["lat"]
+        venue.lat = Decimal("{0:.8f}".format(response["lat"]))
     if "lon" in response:
-        venue.lon = response["lon"]
+        venue.lon = Decimal("{0:.8f}".format(response["lon"]))
     if "localized_country_name" in response:
         venue.localized_country_name = response["localized_country_name"]
     if "name" in response:

@@ -176,8 +176,8 @@ def test_get_group_from_response():
         datetime.fromtimestamp(group_1_response["created"] / 1000)
     )
     assert group_1.description == group_1_response["description"]
-    assert float(group_1.lat) == pytest.approx(group_1_response["lat"], 0.1)
-    assert float(group_1.lon) == pytest.approx(group_1_response["lon"], 0.1)
+    assert "{0:.8f}".format(group_1.lat) == "{0:.8f}".format(group_1_response["lat"])
+    assert "{0:.8f}".format(group_1.lon) == "{0:.8f}".format(group_1_response["lon"])
     assert group_1.link == group_1_response["link"]
     assert group_1.members == group_1_response["members"]
     assert group_1.name == group_1_response["name"]
@@ -217,8 +217,8 @@ def test_get_group_from_response():
         datetime.fromtimestamp(group_2_response["created"] / 1000)
     )
     assert group_2.description == group_2_response["description"]
-    assert float(group_2.lat) == pytest.approx(group_2_response["lat"], 0.1)
-    assert float(group_2.lon) == pytest.approx(group_2_response["lon"], 0.1)
+    assert "{0:.8f}".format(group_2.lat) == "{0:.8f}".format(group_2_response["lat"])
+    assert "{0:.8f}".format(group_2.lon) == "{0:.8f}".format(group_2_response["lon"])
     assert group_2.link == group_2_response["link"]
     assert group_2.members == group_2_response["members"]
     assert group_2.name == group_2_response["name"]
@@ -482,8 +482,8 @@ def test_get_venue_from_response():
     assert venue_2.address_3 == venue_2_response["address_3"]
     assert venue_2.city == venue_2_response["city"]
     assert venue_2.country == venue_2_response["country"]
-    assert venue_2.lat == venue_2_response["lat"]
-    assert venue_2.lon == venue_2_response["lon"]
+    assert "{0:.8f}".format(venue_2.lat) == "{0:.8f}".format(venue_2_response["lat"])
+    assert "{0:.8f}".format(venue_2.lon) == "{0:.8f}".format(venue_2_response["lon"])
     assert venue_2.localized_country_name == venue_2_response["localized_country_name"]
     assert venue_2.name == venue_2_response["name"]
     assert venue_2.phone == venue_2_response["phone"]
