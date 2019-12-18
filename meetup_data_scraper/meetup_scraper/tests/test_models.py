@@ -12,13 +12,99 @@ from meetup_data_scraper.meetup_scraper.models import (
     EventPage,
     SimplePage,
     HomePage,
+    Venue,
 )
 from meetup_data_scraper.meetup_scraper.meetup_api_client.meetup_api_client import (
     MeetupApiClient,
 )
 import datetime
+from meetup_data_scraper.meetup_scraper.tests.meetup_api_demo_response import (
+    get_venue_response,
+)
+from meetup_data_scraper.meetup_scraper.meetup_api_client.json_parser import (
+    get_venue_from_response,
+)
 
 pytestmark = pytest.mark.django_db
+
+
+def test_venue_locastion():
+    # set venue response
+    venue_1_response: dict = get_venue_response(meetup_id=123, content=False)
+    venue_2_response: dict = get_venue_response(meetup_id=124, content=True)
+
+    # get venue model
+    venue_1: Venue = get_venue_from_response(response=venue_1_response)
+    venue_2: Venue = get_venue_from_response(response=venue_2_response)
+
+    # assert venue with no lat & lon
+    assert venue_1.location["lat"] == None
+    assert venue_1.location["lon"] == None
+
+    # assert venue with lat & lon
+    assert "{0:.8f}".format(venue_2.location["lat"]) == "{0:.8f}".format(
+        venue_2_response["lat"]
+    )
+    assert "{0:.8f}".format(venue_2.location["lon"]) == "{0:.8f}".format(
+        venue_2_response["lon"]
+    )
+
+
+def test_meetup_page_locastion():
+    # test meetup location on GroupPage
+    sandbox_group: GroupPage = GroupPageFactory()
+
+    assert "{0:.8f}".format(sandbox_group.location["lat"]) == "{0:.8f}".format(
+        sandbox_group.lat
+    )
+    assert "{0:.8f}".format(sandbox_group.location["lon"]) == "{0:.8f}".format(
+        sandbox_group.lon
+    )
+
+    sandbox_group.lat = None
+    sandbox_group.lon = None
+
+    assert sandbox_group.location["lat"] == None
+    assert sandbox_group.location["lon"] == None
+
+
+def test_venue_groups():
+    # set venue response
+    venue_response: dict = get_venue_response(meetup_id=123, content=False)
+
+    # get venue model
+    venue: Venue = get_venue_from_response(response=venue_response)
+
+    # assert with empty group / event
+    venue_groups: dict = venue.groups
+    assert isinstance(venue_groups, dict)
+    assert venue_groups == {}
+
+    # add venue to event
+    sandbox_group: GroupPage = GroupPageFactory()
+    sandbox_event_1: EventPage = EventPage1Factory()
+    sandbox_event_1.venue = venue
+    sandbox_event_1.save()
+
+    # assert with 1 group / 1 event
+    venue_groups: dict = venue.groups
+    assert isinstance(venue_groups, dict)
+    assert isinstance(venue_groups[sandbox_group.pk], dict)
+    assert len(venue_groups[sandbox_group.pk]["events"]) == 1
+
+    # add more events
+    sandbox_event_2: EventPage = EventPage2Factory()
+    sandbox_event_2.venue = venue
+    sandbox_event_2.save()
+    sandbox_event_3: EventPage = EventPage3Factory()
+    sandbox_event_3.venue = venue
+    sandbox_event_3.save()
+
+    # assert with 1 group / 3 event
+    venue_groups: dict = venue.groups
+    assert isinstance(venue_groups, dict)
+    assert isinstance(venue_groups[sandbox_group.pk], dict)
+    assert len(venue_groups[sandbox_group.pk]["events"]) == 3
 
 
 def test_group_page_last_event():

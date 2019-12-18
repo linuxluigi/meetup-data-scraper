@@ -4,6 +4,7 @@ from meetup_data_scraper.meetup_scraper.models import (
     EventHost,
     EventPage,
     GroupPage,
+    MeetupPage,
     Member,
     MetaCategory,
     Photo,
@@ -14,6 +15,7 @@ from wagtail.api.v2.utils import (
     filter_page_type,
     page_models_from_string,
 )
+from wagtail.core.models import Page
 
 
 class VenueAPIEndpoint(BaseAPIEndpoint):
@@ -26,8 +28,7 @@ class VenueAPIEndpoint(BaseAPIEndpoint):
         "address_3",
         "city",
         "country",
-        "lat",
-        "lon",
+        "location",
         "localized_country_name",
         "name",
         "phone",
@@ -109,112 +110,48 @@ class EventHostAPIEndpoint(BaseAPIEndpoint):
     nested_default_fields = listing_default_fields
 
 
-class EventPageAPIEndpoint(PagesAPIEndpoint):
-    model = EventPage
+class MeetupAPIEndpoint(PagesAPIEndpoint):
+    model = MeetupPage
 
     listing_default_fields = PagesAPIEndpoint.listing_default_fields + [
-        "meetup_id",
-        "attendance_count",
-        "attendance_sample",
-        "attendee_sample",
-        "created",
-        "date_in_series_pattern",
-        "description",
-        "duration",
-        "event_hosts",
-        "fee_accepts",
-        "fee_amount",
-        "fee_currency",
-        "fee_description",
-        "fee_label",
-        "how_to_find_us",
         "name",
-        "status",
-        "time",
-        "updated",
-        "utc_offset",
-        "venue",
-        "venue_visibility",
-        "visibility",
-    ]
-
-    nested_default_fields = listing_default_fields
-
-    def get_queryset(self):
-        request = self.request
-
-        models = [EventPage]
-
-        if len(models) == 1:
-            queryset = models[0].objects.all()
-        else:
-            queryset = EventPage.objects.all()
-
-            # Filter pages by specified models
-            queryset = filter_page_type(queryset, models)
-
-        # Get live pages that are not in a private section
-        queryset = queryset.public().live()
-
-        return queryset
-
-
-class GroupPageAPIEndpoint(PagesAPIEndpoint):
-    model = GroupPage
-
-    listing_default_fields = PagesAPIEndpoint.listing_default_fields + [
-        "meetup_id",
-        "category",
-        "city",
-        "city_link",
-        "country",
-        "created",
         "description",
-        "fee_options_currencies_code",
-        "fee_options_currencies_default",
-        "fee_options_type",
-        "group_photo",
-        "join_mode",
-        "key_photo",
-        "lat",
-        "lon",
+        "location",
         "link",
-        "localized_country_name",
-        "localized_location",
-        "member_limit",
-        "members",
-        "meta_category",
-        "name",
-        "nomination_acceptable",
-        "organizer",
-        "short_link",
-        "state",
-        "status",
-        "timezone",
-        "topics",
-        "untranslated_city",
-        "urlname",
-        "visibility",
-        "welcome_message",
-        "who",
+        "shortname",
+        "time",
     ]
-
-    nested_default_fields = listing_default_fields
 
     def get_queryset(self):
         request = self.request
 
-        models = [GroupPage]
+        # Allow pages to be filtered to a specific type
+        try:
+            models = page_models_from_string(
+                request.GET.get("type", "meetup_scraper.MeetupPage")
+            )
+        except (LookupError, ValueError):
+            raise BadRequestError("type doesn't exist")
+
+        if not models:
+            models = [MeetupPage]
 
         if len(models) == 1:
             queryset = models[0].objects.all()
         else:
-            queryset = EventPage.objects.all()
+            queryset = Page.objects.all()
 
             # Filter pages by specified models
             queryset = filter_page_type(queryset, models)
 
         # Get live pages that are not in a private section
         queryset = queryset.public().live()
+
+        # Filter by site
+        if request.site:
+            queryset = queryset.descendant_of(request.site.root_page, inclusive=True)
+        else:
+            # No sites configured
+            queryset = queryset.none()
 
         return queryset

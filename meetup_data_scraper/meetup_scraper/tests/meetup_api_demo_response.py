@@ -308,6 +308,7 @@ def get_event_response(meetup_id: str = "1", content: bool = False) -> dict:
         "id": meetup_id,
         "name": "test meetup",
         "time": 1560639600000,
+        "link": "http://localhost/",
     }
 
     if content:

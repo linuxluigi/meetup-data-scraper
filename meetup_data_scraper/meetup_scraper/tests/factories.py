@@ -4,6 +4,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import pytz
 import pytest
+from decimal import Decimal
 
 timezone.activate(pytz.timezone("UTC"))
 
@@ -43,6 +44,7 @@ class EventPage1Factory(DjangoModelFactory):
     utc_offset = 0
     venue_visibility = "public"
     visibility = "public"
+    link = "https://localhost/"
 
     # wagtail models
     title = "{}: {}".format(meetup_id, name)
@@ -79,8 +81,8 @@ class GroupPageFactory(DjangoModelFactory):
     created = timezone.make_aware(datetime.strptime("2009-11-13", "%Y-%m-%d"))
     city = "Brooklyn"
     country = "US"
-    lat = 40.7
-    lon = -73.99
+    lat = Decimal("{0:.8f}".format(40.7))
+    lon = Decimal("{0:.8f}".format(-73.9))
     link = "https://localhost/"
     members = 10
     status = "aktive"
