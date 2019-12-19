@@ -13,7 +13,9 @@ from .base import env
 # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["meetup-data-scraper.de"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+# https://github.com/adamchainz/django-cors-headers#configuration
+CORS_ORIGIN_WHITELIST = env.list("CORS_ORIGIN_WHITELIST")
 
 # DATABASES
 # ------------------------------------------------------------------------------
